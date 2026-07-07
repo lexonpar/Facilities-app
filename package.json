@@ -15,6 +15,7 @@
     "verify:rls": "node scripts/verify-rls.mjs",
     "apply:allowlist-users": "node scripts/apply-allowlist-users.mjs",
     "apply:signup-fix": "node scripts/apply-signup-fix.mjs",
+    "apply:locations": "node scripts/apply-location-migration.mjs",
     "disable:email-confirm": "node scripts/disable-email-confirmation.mjs",
     "repair:profiles": "node scripts/repair-missing-profiles.mjs"
   },

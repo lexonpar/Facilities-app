@@ -244,7 +244,7 @@ function SubmitForm() {
       />
 
       <label className="mt-5 block text-sm font-semibold text-zinc-900">
-        Department <span className="text-red-500">*</span>
+        Location <span className="text-red-500">*</span>
       </label>
       <select
         required
@@ -253,7 +253,7 @@ function SubmitForm() {
         className={fieldClass}
       >
         <option value="" disabled>
-          Select department…
+          Select location…
         </option>
         {DEPARTMENTS.map((d) => (
           <option key={d.id} value={d.id}>

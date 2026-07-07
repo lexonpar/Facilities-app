@@ -9,6 +9,7 @@ export const AUTO_ADMIN_LOCAL_PARTS = [
   "events",
   "samantha",
   "facilities",
+  "facility",
 ] as const;
 
 /**

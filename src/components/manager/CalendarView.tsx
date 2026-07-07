@@ -16,7 +16,7 @@ import {
   subMonths,
 } from "date-fns";
 import { ChevronLeft, ChevronRight, Wrench } from "lucide-react";
-import { DEPARTMENT_COLORS, getDepartmentLabel } from "@/lib/departments";
+import { getDepartmentColor, getDepartmentLabel } from "@/lib/departments";
 import { MAINTENANCE_COLOR } from "@/lib/maintenance/constants";
 import { maintenanceOccursOnDay } from "@/lib/maintenance/recurrence";
 import { issueTitle } from "@/lib/format";
@@ -203,7 +203,7 @@ export function CalendarView({
                           key={issue.id}
                           className="h-1.5 w-1.5 rounded-full"
                           style={{
-                            backgroundColor: DEPARTMENT_COLORS[issue.department],
+                            backgroundColor: getDepartmentColor(issue.department),
                           }}
                         />
                       ))}
@@ -523,7 +523,7 @@ function IssueChip({
       )}
       style={{
         borderLeftWidth: 4,
-        borderLeftColor: DEPARTMENT_COLORS[issue.department],
+        borderLeftColor: getDepartmentColor(issue.department),
       }}
     >
       <span

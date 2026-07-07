@@ -1,4 +1,8 @@
-import { DEPARTMENTS, type DepartmentId } from "@/lib/constants";
+import {
+  DEPARTMENTS,
+  normalizeDepartmentId,
+  type DepartmentId,
+} from "@/lib/constants";
 import type { Issue } from "@/lib/types/issue";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -27,26 +31,44 @@ export type IssuesByDepartment = {
 export type GroupIssuesOptions = {
   /** When true, departments with the most recently created issue appear first. */
   bubbleNewestDepartments?: boolean;
+  /** When true, list every venue location in VENUE_WALK_ORDER (including empty sections). */
+  includeEmptyDepartments?: boolean;
 };
 
-/** Groups issues by department; only departments with issues. */
+const WALK_ORDER_INDEX = new Map<DepartmentId, number>(
+  DEPARTMENTS.map((d, i) => [d.id, i]),
+);
+
+function sortGroupsByWalkOrder(groups: IssuesByDepartment[]): IssuesByDepartment[] {
+  return [...groups].sort(
+    (a, b) =>
+      (WALK_ORDER_INDEX.get(a.department) ?? 999) -
+      (WALK_ORDER_INDEX.get(b.department) ?? 999),
+  );
+}
+
+/** Groups issues by department; only departments with issues unless includeEmptyDepartments. */
 export function groupIssuesByDepartment(
   issues: Issue[],
   options: GroupIssuesOptions = {},
 ): IssuesByDepartment[] {
-  const { bubbleNewestDepartments = true } = options;
+  const {
+    bubbleNewestDepartments = true,
+    includeEmptyDepartments = false,
+  } = options;
   const map = new Map<DepartmentId, Issue[]>();
   for (const issue of issues) {
-    const list = map.get(issue.department) ?? [];
-    list.push(issue);
-    map.set(issue.department, list);
+    const dept = normalizeDepartmentId(issue.department);
+    const list = map.get(dept) ?? [];
+    list.push({ ...issue, department: dept });
+    map.set(dept, list);
   }
 
   const groups: IssuesByDepartment[] = [];
 
   for (const d of DEPARTMENTS) {
-    const raw = map.get(d.id);
-    if (!raw?.length) continue;
+    const raw = map.get(d.id) ?? [];
+    if (!includeEmptyDepartments && !raw.length) continue;
 
     const sorted = [...raw].sort(
       (a, b) =>
@@ -57,8 +79,8 @@ export function groupIssuesByDepartment(
       department: d.id,
       label: d.label,
       issues: sorted,
-      oldestCreatedAt: sorted[0]!.created_at,
-      newestCreatedAt: sorted[sorted.length - 1]!.created_at,
+      oldestCreatedAt: sorted[0]?.created_at ?? "",
+      newestCreatedAt: sorted[sorted.length - 1]?.created_at ?? "",
     });
   }
 
@@ -68,6 +90,8 @@ export function groupIssuesByDepartment(
         new Date(b.newestCreatedAt).getTime() -
         new Date(a.newestCreatedAt).getTime(),
     );
+  } else {
+    return sortGroupsByWalkOrder(groups);
   }
 
   return groups;

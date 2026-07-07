@@ -214,9 +214,9 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = FacilitiesChecklist/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "On Par Facilities";
+				INFOPLIST_KEY_CFBundleIdentifier = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_CFBundleIdentifier = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -244,9 +244,9 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = FacilitiesChecklist/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "On Par Facilities";
+				INFOPLIST_KEY_CFBundleIdentifier = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_CFBundleIdentifier = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

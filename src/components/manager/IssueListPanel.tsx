@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ImageIcon } from "lucide-react";
+import { ChevronDown, ImageIcon, ListOrdered, Sparkles } from "lucide-react";
 import type { DepartmentId } from "@/lib/constants";
 import { getDepartmentLabel } from "@/lib/departments";
 import {
@@ -38,19 +38,26 @@ export function IssueListPanel({
       ? issues.filter((i) => i.status === "open")
       : issues.filter((i) => i.status === "completed");
 
+  /** Departments expanded to show issues — starts collapsed; not reset on realtime updates. */
+  const [expanded, setExpanded] = useState<Set<DepartmentId>>(() => new Set());
+  /** To Do only: false = newest sections first (default), true = venue walk-through order. */
+  const [walkthroughOrder, setWalkthroughOrder] = useState(false);
+
   const grouped = useMemo(
     () =>
       groupIssuesByDepartment(filtered, {
-        bubbleNewestDepartments: tab === "todo",
+        bubbleNewestDepartments: tab === "todo" && !walkthroughOrder,
+        includeEmptyDepartments: tab === "todo" && walkthroughOrder,
       }),
-    [filtered, tab],
+    [filtered, tab, walkthroughOrder],
   );
-
-  /** Departments expanded to show issues — starts collapsed; not reset on realtime updates. */
-  const [expanded, setExpanded] = useState<Set<DepartmentId>>(() => new Set());
 
   useEffect(() => {
     setExpanded(new Set());
+  }, [tab]);
+
+  useEffect(() => {
+    if (tab !== "todo") setWalkthroughOrder(false);
   }, [tab]);
 
   useEffect(() => {
@@ -104,6 +111,39 @@ export function IssueListPanel({
         </TabBtn>
       </div>
 
+      {tab === "todo" ? (
+        <div className="flex justify-end border-b border-zinc-200 bg-white px-2 py-1.5">
+          <button
+            type="button"
+            onClick={() => setWalkthroughOrder((v) => !v)}
+            aria-pressed={walkthroughOrder}
+            title={
+              walkthroughOrder
+                ? "Show sections with newest work first"
+                : "Sort sections in venue walk-through order"
+            }
+            className={cn(
+              "inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium transition",
+              walkthroughOrder
+                ? "bg-[#1a73e8]/10 text-[#1a73e8] ring-1 ring-[#1a73e8]/25"
+                : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700",
+            )}
+          >
+            {walkthroughOrder ? (
+              <>
+                <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                Newest first
+              </>
+            ) : (
+              <>
+                <ListOrdered className="h-3.5 w-3.5" aria-hidden />
+                Walk order
+              </>
+            )}
+          </button>
+        </div>
+      ) : null}
+
       <div className="flex-1 overflow-y-auto p-2">
         {grouped.length === 0 ? (
           <p className="p-4 text-center text-sm text-zinc-500">
@@ -118,15 +158,23 @@ export function IssueListPanel({
               oldestCreatedAt,
             }) => {
             const isOpen = expanded.has(department);
+            const isEmpty = deptIssues.length === 0;
             const staleInDept = deptIssues.filter((i) => isIssueStale(i)).length;
-            const oldestLabel = formatCategoryOldestDate(oldestCreatedAt);
+            const oldestLabel = oldestCreatedAt
+              ? formatCategoryOldestDate(oldestCreatedAt)
+              : null;
 
             return (
               <section key={department} className="mb-2">
                 <button
                   type="button"
                   onClick={() => toggleDepartment(department)}
-                  className="flex w-full items-start gap-2 rounded-xl bg-white px-3 py-2.5 text-left shadow-sm ring-1 ring-zinc-200/80 transition hover:bg-zinc-50 active:bg-zinc-100"
+                  className={cn(
+                    "flex w-full items-start gap-2 rounded-xl px-3 py-2.5 text-left shadow-sm ring-1 transition hover:bg-zinc-50 active:bg-zinc-100",
+                    isEmpty
+                      ? "bg-zinc-50 ring-zinc-200/60"
+                      : "bg-white ring-zinc-200/80",
+                  )}
                   aria-expanded={isOpen}
                   aria-controls={`dept-issues-${department}`}
                 >
@@ -137,10 +185,15 @@ export function IssueListPanel({
                     )}
                   />
                   <div className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold text-zinc-900">
+                    <span
+                      className={cn(
+                        "block truncate text-sm font-semibold",
+                        isEmpty ? "text-zinc-500" : "text-zinc-900",
+                      )}
+                    >
                       {label}
                     </span>
-                    {!isOpen ? (
+                    {!isOpen && !isEmpty && oldestLabel ? (
                       <span
                         className={cn(
                           "mt-0.5 block text-xs tabular-nums",
@@ -154,7 +207,14 @@ export function IssueListPanel({
                     ) : null}
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
-                    <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-zinc-700">
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums",
+                        isEmpty
+                          ? "bg-zinc-100 text-zinc-400"
+                          : "bg-zinc-100 text-zinc-700",
+                      )}
+                    >
                       {deptIssues.length}
                     </span>
                     {staleInDept > 0 ? (
@@ -173,15 +233,21 @@ export function IssueListPanel({
                     id={`dept-issues-${department}`}
                     className="mt-1 space-y-1 border-l-2 border-zinc-200 pl-2"
                   >
-                    {deptIssues.map((issue) => (
-                      <IssueCard
-                        key={issue.id}
-                        issue={issue}
-                        selected={selectedId === issue.id}
-                        stale={isIssueStale(issue)}
-                        onSelect={() => onSelect(issue.id)}
-                      />
-                    ))}
+                    {isEmpty ? (
+                      <p className="px-2 py-2 text-xs text-zinc-400">
+                        No open issues
+                      </p>
+                    ) : (
+                      deptIssues.map((issue) => (
+                        <IssueCard
+                          key={issue.id}
+                          issue={issue}
+                          selected={selectedId === issue.id}
+                          stale={isIssueStale(issue)}
+                          onSelect={() => onSelect(issue.id)}
+                        />
+                      ))
+                    )}
                   </div>
                 ) : null}
               </section>

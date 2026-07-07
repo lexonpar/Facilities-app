@@ -16,6 +16,7 @@ const CORE = [
   "events",
   "samantha",
   "facilities",
+  "facility",
 ];
 
 function loadEnv() {

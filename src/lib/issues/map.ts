@@ -1,4 +1,4 @@
-import type { DepartmentId, PriorityId } from "@/lib/constants";
+import { normalizeDepartmentId, type PriorityId } from "@/lib/constants";
 import type { Issue, WorkflowStatus } from "@/lib/types/issue";
 
 export type IssueRow = {
@@ -22,7 +22,7 @@ export function rowToIssue(
 ): Issue {
   return {
     id: row.id,
-    department: row.department as DepartmentId,
+    department: normalizeDepartmentId(row.department),
     comment: row.comment,
     submitted_by: row.submitted_by,
     photo_url: photoUrl ?? publicPhotoUrl(row.photo_path),

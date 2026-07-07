@@ -29,7 +29,7 @@ export const MOCK_ISSUES: Issue[] = [
   },
   {
     id: "118",
-    department: "bathroom",
+    department: "bathrooms",
     comment: "Main restroom — second stall door latch broken.",
     submitted_by: "Sam R.",
     priority: "normal",
@@ -49,7 +49,7 @@ export const MOCK_ISSUES: Issue[] = [
   },
   {
     id: "116",
-    department: "outdoor",
+    department: "outdoor_patio",
     comment: "Patio heater not igniting on table section B.",
     submitted_by: "Pat K.",
     priority: "normal",

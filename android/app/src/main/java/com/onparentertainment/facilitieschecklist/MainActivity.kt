@@ -131,12 +131,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun launchCamera() {
         val photoFile = File(cacheDir, "capture-${System.currentTimeMillis()}.jpg")
-        cameraUri = FileProvider.getUriForFile(
+        val uri = FileProvider.getUriForFile(
             this,
             "${packageName}.fileprovider",
             photoFile,
         )
-        takePicture.launch(cameraUri)
+        cameraUri = uri
+        takePicture.launch(uri)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

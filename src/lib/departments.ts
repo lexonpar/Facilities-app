@@ -1,25 +1,34 @@
-import { DEPARTMENTS, type DepartmentId } from "@/lib/constants";
+import {
+  DEPARTMENTS,
+  normalizeDepartmentId,
+  type DepartmentId,
+} from "@/lib/constants";
 
-export function getDepartmentLabel(id: DepartmentId): string {
-  return DEPARTMENTS.find((d) => d.id === id)?.label ?? id;
+export function getDepartmentLabel(id: string): string {
+  const normalized = normalizeDepartmentId(id);
+  return DEPARTMENTS.find((d) => d.id === normalized)?.label ?? id;
 }
 
-/** Calendar / list accent colors per department */
+/** Calendar / list accent colors per location */
 export const DEPARTMENT_COLORS: Record<DepartmentId, string> = {
-  bowling: "#0d9488",
-  karaoke: "#7c3aed",
-  darts: "#dc2626",
+  ada_hallway: "#6366f1",
   mini_golf: "#16a34a",
-  shuffleboard: "#ca8a04",
-  foosball: "#ea580c",
-  cleaning: "#64748b",
-  beverage: "#2563eb",
-  outdoor: "#059669",
-  main_wall: "#4f46e5",
-  kitchen: "#b45309",
-  front_desk: "#0891b2",
-  break_room: "#9333ea",
-  dock: "#525252",
-  bathroom: "#0e7490",
+  main_wall_tapwall: "#4f46e5",
+  patio_tapwall: "#2563eb",
+  outdoor_patio: "#059669",
+  front_desk_entrance: "#0891b2",
+  darts: "#dc2626",
+  bowling: "#0d9488",
+  bathrooms: "#0e7490",
+  offices: "#9333ea",
   vip: "#be123c",
+  karaoke: "#7c3aed",
+  facilities_area: "#64748b",
+  back_dock: "#525252",
+  kitchen: "#b45309",
 };
+
+export function getDepartmentColor(id: string): string {
+  const normalized = normalizeDepartmentId(id);
+  return DEPARTMENT_COLORS[normalized] ?? "#64748b";
+}
