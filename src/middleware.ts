@@ -5,6 +5,18 @@ import {
 } from "@/lib/auth/session";
 import { createMiddlewareSupabase } from "@/lib/supabase/middleware";
 
+function safeLocalPath(request: NextRequest, value: string | null) {
+  if (!value) return "/lead";
+  try {
+    const target = new URL(value, request.url);
+    return target.origin === request.nextUrl.origin
+      ? `${target.pathname}${target.search}${target.hash}`
+      : "/lead";
+  } catch {
+    return "/lead";
+  }
+}
+
 export async function middleware(request: NextRequest) {
   const ctx = createMiddlewareSupabase(
     request,
@@ -26,8 +38,7 @@ export async function middleware(request: NextRequest) {
     const role = await getManagerProfileRoleWithService(user.id);
 
     if (isLogin && managerDashboardAllowed(role)) {
-      const next = request.nextUrl.searchParams.get("next") || "/lead";
-      const dest = next.startsWith("/") ? next : "/lead";
+      const dest = safeLocalPath(request, request.nextUrl.searchParams.get("next"));
       return NextResponse.redirect(new URL(dest, request.url));
     }
 

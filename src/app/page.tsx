@@ -24,7 +24,7 @@ export default function HomePage() {
 
         <div className="mt-6 flex flex-col gap-3">
           <Link
-            href="/submit"
+            href="/login?next=/submit"
             className="surface-card flex items-center gap-4 p-4 transition active:scale-[0.99]"
           >
             <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#1a73e8]/10 text-[#1a73e8]">
@@ -35,7 +35,7 @@ export default function HomePage() {
                 Report an issue
               </span>
               <span className="text-sm text-zinc-500">
-                Name, department, required photo & urgent flag
+                Sign in with your 7shifts Punch ID
               </span>
             </span>
           </Link>

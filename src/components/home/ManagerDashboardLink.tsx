@@ -11,7 +11,7 @@ import {
 export function ManagerDashboardLink() {
   const [href, setHref] = useState("/login?next=/lead");
   const [subtitle, setSubtitle] = useState(
-    "Sign in with your On Par team account",
+    "Sign in with your 7shifts Punch ID",
   );
 
   useEffect(() => {

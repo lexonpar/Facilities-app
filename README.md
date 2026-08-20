@@ -2,6 +2,11 @@
 
 Maintenance issue reporting for floor staff and a MaintainX-style manager dashboard with **real-time** updates.
 
+Active employees sign in at `/login` by choosing their name and entering their
+7shifts Punch ID. Facilities delegates verification to ShiftFlow and never
+stores raw Punch IDs. A separate email/PIN sign-in remains available for admin
+accounts.
+
 ## Quick start
 
 ### 1. Supabase

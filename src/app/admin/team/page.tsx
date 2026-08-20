@@ -22,6 +22,10 @@ type AllowlistEntry = {
   created_at: string;
 };
 
+function isPunchAccount(profile: Profile) {
+  return profile.email.toLowerCase().endsWith("@auth.onpar.invalid");
+}
+
 function TeamAdmin() {
   const { profile } = useAuth();
   const [users, setUsers] = useState<Profile[]>([]);
@@ -60,7 +64,9 @@ function TeamAdmin() {
   }, []);
 
   useEffect(() => {
-    if (profile && canManageTeam(profile.role)) load();
+    if (!profile || !canManageTeam(profile.role)) return;
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
   }, [profile, load]);
 
   async function allowNewSignup(e: React.FormEvent) {
@@ -128,8 +134,9 @@ function TeamAdmin() {
         </Link>
         <h1 className="mt-2 text-xl font-bold text-zinc-900">Team permissions</h1>
         <p className="text-sm text-zinc-600">
-          Adding someone here only approves sign-up. They appear in the team list
-          below after they create an account at /login — then set their role.
+          Active 7shifts employees are added automatically the first time they
+          sign in with their Punch ID. Email approvals below are for admin
+          account access only.
         </p>
       </header>
 
@@ -139,10 +146,10 @@ function TeamAdmin() {
           className="mb-6 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm"
         >
           <h2 className="text-sm font-semibold text-zinc-900">
-            Allow a new sign-up
+            Allow an admin email account
           </h2>
           <p className="mt-1 text-xs text-zinc-500">
-            They use username@onparbar.com and create a 6-digit PIN at /login.
+            Use this only when someone needs the separate admin email sign-in.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <input
@@ -185,11 +192,10 @@ function TeamAdmin() {
             return (
               <section className="mb-6">
                 <h2 className="text-sm font-semibold text-zinc-900">
-                  Approved — waiting to sign up
+                  Admin emails — waiting to sign up
                 </h2>
                 <p className="mt-1 text-xs text-zinc-500">
-                  These people can use Create account but are not in the team list
-                  yet.
+                  These people can use Admin email sign-in → Create account.
                 </p>
                 <ul className="mt-2 space-y-2">
                   {pending.map((e) => (
@@ -219,41 +225,46 @@ function TeamAdmin() {
             </p>
           ) : null}
           <ul className="space-y-3">
-            {users.map((u) => (
-              <li
-                key={u.id}
-                className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="font-semibold text-zinc-900">
-                      {u.display_name ?? u.username}
-                    </p>
-                    <p className="text-sm text-zinc-500">
-                      @{u.username} · {u.email}
-                    </p>
+            {users.map((u) => {
+              const punchAccount = isPunchAccount(u);
+              return (
+                <li
+                  key={u.id}
+                  className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="font-semibold text-zinc-900">
+                        {u.display_name ?? u.username}
+                      </p>
+                      <p className="text-sm text-zinc-500">
+                        {punchAccount
+                          ? "7shifts Punch ID account · access managed by ShiftFlow"
+                          : `@${u.username} · ${u.email}`}
+                      </p>
+                    </div>
+                    <select
+                      value={u.role}
+                      disabled={savingId === u.id || punchAccount}
+                      onChange={(e) =>
+                        updateRole(u.id, e.target.value as UserRole)
+                      }
+                      className={cn(
+                        "rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium",
+                        u.role === "admin" && "border-indigo-300 bg-indigo-50",
+                        u.role === "manager" && "border-teal-300 bg-teal-50",
+                      )}
+                    >
+                      {(Object.keys(ROLE_LABELS) as UserRole[]).map((role) => (
+                        <option key={role} value={role}>
+                          {ROLE_LABELS[role]}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <select
-                    value={u.role}
-                    disabled={savingId === u.id}
-                    onChange={(e) =>
-                      updateRole(u.id, e.target.value as UserRole)
-                    }
-                    className={cn(
-                      "rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-medium",
-                      u.role === "admin" && "border-indigo-300 bg-indigo-50",
-                      u.role === "manager" && "border-teal-300 bg-teal-50",
-                    )}
-                  >
-                    {(Object.keys(ROLE_LABELS) as UserRole[]).map((role) => (
-                      <option key={role} value={role}>
-                        {ROLE_LABELS[role]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
           </>
         )}
