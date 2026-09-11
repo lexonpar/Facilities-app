@@ -1,6 +1,14 @@
+import { validateIsolatedEnvironment } from "../../../supabase/functions/_shared/environment";
+
+/** Raw public configuration is only for local cookie cleanup when auth is unavailable. */
+export function getConfiguredSupabaseUrl(): string {
+  return process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? "";
+}
+
 /** Resolves Supabase URL and anon/publishable key from env (supports new Supabase key names). */
 export function getSupabaseUrl(): string {
-  return process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? "";
+  if (typeof window === "undefined") validateIsolatedEnvironment(process.env, "web");
+  return getConfiguredSupabaseUrl();
 }
 
 export function getSupabaseAnonKey(): string {

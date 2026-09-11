@@ -1,5 +1,6 @@
 import { createBrowserClient } from "@supabase/ssr";
 import { getSupabaseAnonKey, getSupabaseUrl, isSupabaseConfigured } from "./env";
+import { fetchSupabase } from "./request";
 
 export { isSupabaseConfigured };
 
@@ -13,5 +14,5 @@ export function createClient() {
     );
   }
 
-  return createBrowserClient(url, key);
+  return createBrowserClient(url, key, { global: { fetch: fetchSupabase } });
 }

@@ -17,7 +17,7 @@ android {
         buildConfigField(
             "String",
             "WEB_APP_URL",
-            "\"https://facilities-checklist.vercel.app\"",
+            "\"https://on-par-checklists.vercel.app\"",
         )
     }
 
@@ -33,7 +33,7 @@ android {
             buildConfigField(
                 "String",
                 "WEB_APP_URL",
-                "\"https://facilities-checklist.vercel.app\"",
+                "\"https://on-par-checklists.vercel.app\"",
             )
         }
     }

@@ -1,4 +1,5 @@
 export const VENUE_NAME = "On Par Entertainment";
+export const STAFF_TOOLS_URL = "/staff-tools";
 
 /** Fixed venue walk-through order (sheet to shelf). Single source of truth for all location lists. */
 export const VENUE_WALK_ORDER = [

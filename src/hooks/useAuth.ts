@@ -34,15 +34,8 @@ export function useAuth() {
     setUser({ id: authUser.id, email: authUser.email });
 
     try {
-      let res = await fetch("/api/auth/profile", { cache: "no-store" });
-      let data = (await res.json()) as { profile?: Profile | null };
-
-      if (!data.profile) {
-        await fetch("/api/auth/complete-signup", { method: "POST" });
-        res = await fetch("/api/auth/profile", { cache: "no-store" });
-        data = (await res.json()) as { profile?: Profile | null };
-      }
-
+      const res = await fetch("/api/auth/profile", { cache: "no-store" });
+      const data = (await res.json()) as { profile?: Profile | null };
       setProfile(data.profile ?? null);
     } catch {
       setProfile(null);
@@ -51,18 +44,25 @@ export function useAuth() {
   }, []);
 
   useEffect(() => {
-    loadProfile();
+    const timeoutId = window.setTimeout(() => {
+      void loadProfile();
+    }, 0);
 
-    if (!isSupabaseConfigured()) return;
+    if (!isSupabaseConfigured()) {
+      return () => window.clearTimeout(timeoutId);
+    }
 
     const supabase = createClient();
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(() => {
-      loadProfile();
+      void loadProfile();
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      window.clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
   }, [loadProfile]);
 
   return { user, profile, loading, refresh: loadProfile };

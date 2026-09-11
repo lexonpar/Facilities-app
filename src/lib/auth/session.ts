@@ -1,35 +1,63 @@
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import { loadProfileByUserId } from "@/lib/auth/profile";
-import { getSupabaseUrl } from "@/lib/supabase/env";
-import {
-  canAccessManagerDashboard,
-  type UserRole,
-} from "@/lib/types/profile";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { UserRole } from "@/lib/types/profile";
 
-export async function getManagerProfileRoleWithService(
-  userId: string,
-): Promise<UserRole | null> {
-  const serviceKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
-    process.env.SUPABASE_SECRET_KEY?.trim();
-  const url = getSupabaseUrl();
+export type FacilitiesAccess = {
+  active: boolean;
+  role: UserRole;
+};
 
-  if (serviceKey && url) {
-    const service = createSupabaseClient(url, serviceKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    const { data: profile } = await service
-      .from("profiles")
-      .select("role")
-      .eq("id", userId)
-      .single();
-    return (profile?.role as UserRole) ?? null;
-  }
-
-  const profile = await loadProfileByUserId(userId);
-  return profile?.role ?? null;
+function isUserRole(value: unknown): value is UserRole {
+  return (
+    value === "pending" ||
+    value === "staff" ||
+    value === "manager" ||
+    value === "admin"
+  );
 }
 
-export function managerDashboardAllowed(role: UserRole | null): boolean {
-  return Boolean(role && canAccessManagerDashboard(role));
+/**
+ * Loads the database-backed role and roster status used for optimistic routing.
+ * Secure mutations repeat the same authorization in the server auth helper/RLS.
+ */
+export async function getFacilitiesAccess(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<FacilitiesAccess | null> {
+  try {
+    const [profileResult, rosterResult, ownerResult] = await Promise.all([
+      supabase.from("profiles").select("role").eq("id", userId).maybeSingle(),
+      supabase
+        .from("staff_roster_accounts")
+        .select("active")
+        .eq("profile_id", userId)
+        .eq("roster_source", "shiftflow")
+        .eq("company_id", "on-par")
+        .maybeSingle(),
+      supabase
+        .from("facilities_owner_accounts")
+        .select("active")
+        .eq("profile_id", userId)
+        .eq("owner_source", "staff_tools")
+        .eq("owner_id", "emp-alexis-younker")
+        .maybeSingle(),
+    ]);
+
+    const role = profileResult.data?.role;
+    if (
+      profileResult.error ||
+      rosterResult.error ||
+      ownerResult.error ||
+      !isUserRole(role)
+    ) {
+      return null;
+    }
+
+    return {
+      role,
+      active:
+        rosterResult.data?.active === true || ownerResult.data?.active === true,
+    };
+  } catch {
+    return null;
+  }
 }

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
+  ArrowLeft,
   AlertTriangle,
   Plus,
   Search,
@@ -11,6 +12,7 @@ import {
   WifiOff,
   Loader2,
 } from "lucide-react";
+import { STAFF_TOOLS_URL } from "@/lib/constants";
 import { canManageTeam } from "@/lib/types/profile";
 import type { WorkflowStatus } from "@/lib/types/issue";
 import { issueTitle } from "@/lib/format";
@@ -159,6 +161,13 @@ export function ManagerApp() {
           className={`shrink-0 border-b border-zinc-200 bg-white px-4 py-3 ${hideMobileChrome ? "hidden lg:block" : ""}`}
         >
           <div className="flex flex-wrap items-center gap-3">
+            <a
+              href={STAFF_TOOLS_URL}
+              className="hidden h-10 shrink-0 items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 lg:inline-flex"
+            >
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+              All apps
+            </a>
             <ViewToggle view={view} onViewChange={changeView} />
             <div className="min-w-0 flex-1">
               <h1 className="text-xl font-bold tracking-tight text-zinc-900 lg:text-2xl lg:font-semibold">

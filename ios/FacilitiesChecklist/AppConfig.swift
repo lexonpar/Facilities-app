@@ -7,7 +7,7 @@ enum AppConfig {
             !raw.isEmpty,
             let url = URL(string: raw)
         else {
-            return URL(string: "https://facilities-checklist.vercel.app")!
+            return URL(string: "https://on-par-checklists.vercel.app")!
         }
         return url
     }

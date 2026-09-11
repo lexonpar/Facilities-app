@@ -1,2 +1,2 @@
 // Live app server (used for Debug + Release on real devices)
-WEB_APP_URL = https:/$()/facilities-checklist.vercel.app
+WEB_APP_URL = https:/$()/on-par-checklists.vercel.app

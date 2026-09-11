@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { BROWSER_PROFILE_COOKIE, browserProfileAllows, browserProfileIsBlocked } from "@/lib/auth/browser-session";
 import { loadProfileByUserId } from "@/lib/auth/profile";
-import {
-  facilitiesPunchIdentity,
-  loadActiveShiftFlowEmployees,
-} from "@/lib/auth/shiftflow-punch";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { getFacilitiesAccess } from "@/lib/auth/session";
+import { createClient } from "@/lib/supabase/server";
 import type { Profile, UserRole } from "@/lib/types/profile";
-import { canAccessManagerDashboard, canManageTeam } from "@/lib/types/profile";
+import {
+  canAccessManagerDashboard,
+  canManageTeam,
+  canSubmitIssues,
+} from "@/lib/types/profile";
 
 export type AuthContext = {
   userId: string;
@@ -15,65 +18,41 @@ export type AuthContext = {
 };
 
 export async function getAuthContext(): Promise<AuthContext | null> {
+  const binding = (await cookies()).get(BROWSER_PROFILE_COOKIE)?.value;
+  if (browserProfileIsBlocked(binding)) return null;
   const supabase = await createClient();
   const {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
 
-  if (userError || !user?.email) return null;
+  if (userError || !user?.email || !browserProfileAllows(binding, user.id)) return null;
 
-  const profile = await loadProfileByUserId(user.id);
+  const profile = await loadProfileByUserId(user.id, supabase);
   if (!profile) return null;
 
-  if (profile.email.toLowerCase().endsWith("@auth.onpar.invalid")) {
-    const employeeId =
-      typeof user.user_metadata.shiftflow_employee_id === "string"
-        ? user.user_metadata.shiftflow_employee_id.trim()
-        : "";
-    let active: boolean | null = null;
-    if (!/^[A-Za-z0-9_-]{1,80}$/.test(employeeId)) {
-      active = false;
-    } else {
-      try {
-        const expected = facilitiesPunchIdentity(employeeId);
-        const identityMatches =
-          expected.email === user.email.trim().toLowerCase() &&
-          expected.email === profile.email.trim().toLowerCase() &&
-          expected.username === profile.username;
-        if (identityMatches) {
-          const employees = await loadActiveShiftFlowEmployees();
-          active = employees.some((employee) => employee.id === employeeId);
-        } else {
-          active = false;
-        }
-      } catch {
-        // A temporary upstream/configuration outage blocks this request without
-        // permanently changing the employee's Facilities role.
-        return null;
-      }
-    }
-
-    if (active === false) {
-      try {
-        const service = createServiceClient();
-        await service
-          .from("profiles")
-          .update({ role: "pending" })
-          .eq("id", user.id);
-        await supabase.auth.signOut();
-      } catch {
-        // Returning no context still prevents protected API access.
-      }
-      return null;
-    }
-  }
+  const access = await getFacilitiesAccess(supabase, user.id);
+  if (!access?.active || access.role !== profile.role) return null;
 
   return {
     userId: user.id,
     email: user.email,
     profile: profile as Profile,
   };
+}
+
+export async function requireStaffAuth(): Promise<AuthContext | NextResponse> {
+  const ctx = await getAuthContext();
+  if (!ctx) {
+    return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+  }
+  if (!canSubmitIssues(ctx.profile.role)) {
+    return NextResponse.json(
+      { error: "Staff access is not active for this account" },
+      { status: 403 },
+    );
+  }
+  return ctx;
 }
 
 export async function requireManagerAuth(): Promise<

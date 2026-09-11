@@ -25,7 +25,11 @@ type IssueListPanelProps = {
   className?: string;
 };
 
-export function IssueListPanel({
+export function IssueListPanel(props: IssueListPanelProps) {
+  return <IssueListPanelForTab key={props.tab} {...props} />;
+}
+
+function IssueListPanelForTab({
   issues,
   tab,
   onTabChange,
@@ -53,24 +57,20 @@ export function IssueListPanel({
   );
 
   useEffect(() => {
-    setExpanded(new Set());
-  }, [tab]);
-
-  useEffect(() => {
-    if (tab !== "todo") setWalkthroughOrder(false);
-  }, [tab]);
-
-  useEffect(() => {
     if (!selectedId) return;
     const issue = issues.find((i) => i.id === selectedId);
-    if (issue) {
+    if (!issue) return;
+
+    const timeoutId = window.setTimeout(() => {
       setExpanded((prev) => {
         if (prev.has(issue.department)) return prev;
         const next = new Set(prev);
         next.add(issue.department);
         return next;
       });
-    }
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [selectedId, issues]);
 
   function toggleDepartment(id: DepartmentId) {

@@ -1,7 +1,7 @@
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { getSupabaseAnonKey, getSupabaseUrl } from "./env";
+import { fetchSupabase } from "./request";
 
 export async function createClient() {
   const url = getSupabaseUrl();
@@ -14,6 +14,7 @@ export async function createClient() {
   const cookieStore = await cookies();
 
   return createServerClient(url, key, {
+    global: { fetch: fetchSupabase },
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -28,20 +29,5 @@ export async function createClient() {
         }
       },
     },
-  });
-}
-
-export function createServiceClient() {
-  const url = getSupabaseUrl();
-  const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
-    process.env.SUPABASE_SECRET_KEY?.trim();
-
-  if (!url || !key) {
-    throw new Error("Supabase service role is not configured");
-  }
-
-  return createSupabaseClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
   });
 }

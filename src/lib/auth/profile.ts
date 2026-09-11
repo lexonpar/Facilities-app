@@ -1,12 +1,14 @@
-import { createServiceClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types/profile";
 
-/** Load profile by auth user id (service role — avoids broken RLS recursion on profiles). */
+/** Load the signed-in user's own profile through its RLS-protected session. */
 export async function loadProfileByUserId(
   userId: string,
+  client?: SupabaseClient,
 ): Promise<Profile | null> {
   try {
-    const supabase = createServiceClient();
+    const supabase = client ?? (await createClient());
     const { data, error } = await supabase
       .from("profiles")
       .select("*")

@@ -44,7 +44,11 @@ export function useMaintenance() {
   }, [applyRows]);
 
   useEffect(() => {
-    fetchItems();
+    const timeoutId = window.setTimeout(() => {
+      void fetchItems();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [fetchItems]);
 
   useEffect(() => {

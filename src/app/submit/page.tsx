@@ -10,24 +10,45 @@ import {
   Loader2,
   ImageIcon,
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { DEPARTMENTS, PRIORITIES, VENUE_NAME } from "@/lib/constants";
 import type { DepartmentId, PriorityId } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { canAccessManagerDashboard } from "@/lib/types/profile";
 import { cn } from "@/lib/utils";
 
 const SUBMIT_DRAFT_KEY = "facilities-submit-draft";
+const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 
 type SubmitDraft = {
-  name: string;
   comment: string;
   department: string;
   priority: PriorityId;
 };
 
+const PHOTO_EXTENSIONS: Record<string, string> = {
+  "image/heic": "heic",
+  "image/heif": "heif",
+  "image/jpeg": "jpg",
+  "image/jpg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
+function photoExtension(file: File) {
+  const mimeExtension = PHOTO_EXTENSIONS[file.type.toLowerCase()];
+  if (mimeExtension) return mimeExtension;
+
+  const nameExtension = file.name.split(".").pop()?.toLowerCase();
+  return nameExtension && /^(?:heic|heif|jpe?g|png|webp)$/.test(nameExtension)
+    ? nameExtension
+    : null;
+}
+
 function SubmitForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user, profile, loading: authLoading } = useAuth();
   const successFromUrl = searchParams.get("success") === "1";
   const deptParam = searchParams.get("dept") as DepartmentId | null;
   const validDept = DEPARTMENTS.some((d) => d.id === deptParam)
@@ -37,7 +58,6 @@ function SubmitForm() {
   const cameraRef = useRef<HTMLInputElement>(null);
   const libraryRef = useRef<HTMLInputElement>(null);
   const [department, setDepartment] = useState<DepartmentId | "">(validDept);
-  const [name, setName] = useState("");
   const [comment, setComment] = useState("");
   const [priority, setPriority] = useState<PriorityId>("normal");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -45,17 +65,20 @@ function SubmitForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(successFromUrl);
+  const submittedBy =
+    profile?.display_name?.trim() || profile?.username.trim() || "";
 
   const inAppShell =
     typeof navigator !== "undefined" &&
     navigator.userAgent.includes("FacilitiesChecklist");
 
+  /* eslint-disable react-hooks/set-state-in-effect -- Restore the browser-only
+     session draft once after hydration. */
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(SUBMIT_DRAFT_KEY);
       if (!raw) return;
       const draft = JSON.parse(raw) as SubmitDraft;
-      if (draft.name) setName(draft.name);
       if (draft.comment) setComment(draft.comment);
       if (draft.department && DEPARTMENTS.some((d) => d.id === draft.department)) {
         setDepartment(draft.department as DepartmentId);
@@ -66,11 +89,11 @@ function SubmitForm() {
       sessionStorage.removeItem(SUBMIT_DRAFT_KEY);
     }
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   function persistDraft() {
     try {
       const draft: SubmitDraft = {
-        name,
         comment,
         department,
         priority,
@@ -100,23 +123,33 @@ function SubmitForm() {
 
   const formReady =
     Boolean(department) &&
-    name.trim().length > 0 &&
+    Boolean(user && profile) &&
+    !authLoading &&
     comment.trim().length >= 3 &&
     photoFile !== null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!department || !name.trim() || comment.trim().length < 3) return;
+    if (!department || comment.trim().length < 3) return;
+
+    if (!user || !profile) {
+      setError("Sign in with your Punch ID before submitting an issue.");
+      return;
+    }
 
     if (!photoFile) {
       setError("A photo is required. Take a photo or choose one from your library.");
       return;
     }
 
-    if (!isSupabaseConfigured()) {
-      setError(
-        "Unable to connect right now. Please try again later or contact your manager.",
-      );
+    if (photoFile.size > MAX_PHOTO_BYTES) {
+      setError("Choose a photo smaller than 10 MB.");
+      return;
+    }
+
+    const extension = photoExtension(photoFile);
+    if (!extension) {
+      setError("Choose a JPEG, PNG, WebP, HEIC, or HEIF photo.");
       return;
     }
 
@@ -125,35 +158,39 @@ function SubmitForm() {
 
     try {
       const supabase = createClient();
-      const ext = photoFile.name.split(".").pop() ?? "jpg";
-      const path = `${crypto.randomUUID()}.${ext}`;
+      const path = `${user.id}/${crypto.randomUUID()}.${extension}`;
       const { error: uploadError } = await supabase.storage
         .from("issue-photos")
-        .upload(path, photoFile, { cacheControl: "3600", upsert: false });
+        .upload(path, photoFile, {
+          cacheControl: "3600",
+          contentType: photoFile.type || undefined,
+          upsert: false,
+        });
 
       if (uploadError) {
-        throw new Error(`Photo upload failed: ${uploadError.message}`);
+        throw new Error("Photo upload failed. Check your connection and try again.");
       }
-      const photo_path = path;
 
-      const { error: insertError } = await supabase.from("issues").insert({
-        department,
-        comment: comment.trim(),
-        submitted_by: name.trim(),
-        priority,
-        photo_path,
-        status: "open",
-        workflow_status: "open",
+      const response = await fetch("/api/issues/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          department,
+          comment: comment.trim(),
+          photoPath: path,
+          priority,
+        }),
       });
-
-      if (insertError) {
-        throw new Error(insertError.message);
+      const result = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      if (!response.ok) {
+        throw new Error(result?.error || "Could not submit issue");
       }
 
       sessionStorage.removeItem(SUBMIT_DRAFT_KEY);
       router.replace("/submit?success=1");
       setSubmitted(true);
-      setName("");
       setComment("");
       setPriority("normal");
       onPhotoChange(null);
@@ -195,12 +232,14 @@ function SubmitForm() {
         >
           Submit another
         </button>
-        <Link
-          href="/login?next=/lead"
-          className="mt-3 block text-sm font-medium text-[#1a73e8]"
-        >
-          Open manager dashboard
-        </Link>
+        {profile && canAccessManagerDashboard(profile.role) ? (
+          <Link
+            href="/lead"
+            className="mt-3 block text-sm font-medium text-[#1a73e8]"
+          >
+            Open manager dashboard
+          </Link>
+        ) : null}
       </div>
     );
   }
@@ -232,35 +271,36 @@ function SubmitForm() {
           </p>
         ) : null}
 
-      <label className="mt-6 block text-sm font-semibold text-zinc-900">
-        Your name <span className="text-red-500">*</span>
-      </label>
-      <input
-        required
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        className={fieldClass}
-        placeholder="First name or initials"
-      />
+        <label className="mt-6 block text-sm font-semibold text-zinc-900">
+          Submitting as
+        </label>
+        <div className={`${fieldClass} text-zinc-800`} aria-live="polite">
+          {authLoading
+            ? "Verifying your staff account…"
+            : submittedBy || "Staff account required"}
+        </div>
+        <p className="mt-1.5 text-xs text-zinc-500">
+          This name comes from your signed-in staff profile.
+        </p>
 
-      <label className="mt-5 block text-sm font-semibold text-zinc-900">
-        Location <span className="text-red-500">*</span>
-      </label>
-      <select
-        required
-        value={department}
-        onChange={(e) => setDepartment(e.target.value as DepartmentId)}
-        className={fieldClass}
-      >
-        <option value="" disabled>
-          Select location…
-        </option>
-        {DEPARTMENTS.map((d) => (
-          <option key={d.id} value={d.id}>
-            {d.label}
+        <label className="mt-5 block text-sm font-semibold text-zinc-900">
+          Location <span className="text-red-500">*</span>
+        </label>
+        <select
+          required
+          value={department}
+          onChange={(e) => setDepartment(e.target.value as DepartmentId)}
+          className={fieldClass}
+        >
+          <option value="" disabled>
+            Select location…
           </option>
-        ))}
-      </select>
+          {DEPARTMENTS.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.label}
+            </option>
+          ))}
+        </select>
 
       <label className="mt-5 block text-sm font-semibold text-zinc-900">
         Priority
@@ -294,6 +334,7 @@ function SubmitForm() {
       <textarea
         required
         minLength={3}
+        maxLength={2000}
         rows={4}
         value={comment}
         onChange={(e) => setComment(e.target.value)}

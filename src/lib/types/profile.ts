@@ -8,6 +8,11 @@ export interface Profile {
   role: UserRole;
   created_at: string;
   updated_at: string;
+  sign_in_source?: "punch" | "staff_tools_owner";
+}
+
+export function canSubmitIssues(role: UserRole): boolean {
+  return role === "staff" || role === "manager" || role === "admin";
 }
 
 export function canAccessManagerDashboard(role: UserRole): boolean {

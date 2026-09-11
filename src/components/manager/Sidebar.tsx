@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import {
   CalendarDays,
   ClipboardList,
@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import type { IssueView } from "@/lib/types/issue";
 import type { Profile } from "@/lib/types/profile";
 import { canManageTeam } from "@/lib/types/profile";
+import { notifyBrowserSessionReset } from "@/lib/auth/browser-session";
 
 type SidebarProps = {
   view: IssueView;
@@ -22,16 +23,29 @@ type SidebarProps = {
 };
 
 export function Sidebar({ view, onViewChange, profile }: SidebarProps) {
-  const router = useRouter();
+  const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState("");
   const initial =
     profile?.display_name?.[0] ??
     profile?.username?.[0] ??
     "?";
 
   async function signOut() {
-    await fetch("/api/auth/signout", { method: "POST" });
-    router.replace("/login");
-    router.refresh();
+    if (signingOut) return;
+    setSigningOut(true);
+    setSignOutError("");
+    try {
+      const response = await fetch("/api/auth/signout", { method: "POST" });
+      const result = await response.json();
+      if (!response.ok || result.ok !== true) throw new Error("Sign-out failed");
+      notifyBrowserSessionReset();
+      window.location.replace(result.remoteRevocationConfirmed === true
+        ? "/login"
+        : "/login?reason=remote-signout-unconfirmed");
+    } catch {
+      setSigningOut(false);
+      setSignOutError("Sign-out could not be confirmed. Try again before sharing this device.");
+    }
   }
 
   return (
@@ -76,12 +90,14 @@ export function Sidebar({ view, onViewChange, profile }: SidebarProps) {
       <div className="mt-auto flex flex-col items-center gap-2">
         <button
           type="button"
+          disabled={signingOut}
           onClick={() => signOut()}
           className="flex h-10 w-10 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100"
           title="Sign out"
         >
           <LogOut className="h-5 w-5" />
         </button>
+        {signOutError ? <p role="alert" className="fixed bottom-4 left-16 z-50 max-w-sm rounded-lg bg-red-50 p-3 text-sm text-red-900 shadow-lg">{signOutError}</p> : null}
         <div
           className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-200 text-xs font-semibold uppercase text-zinc-700"
           title={profile?.email}

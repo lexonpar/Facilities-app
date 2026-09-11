@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { format, parseISO } from "date-fns";
 import { ChevronLeft, Loader2, Mail, Pencil, Phone, Wrench, X } from "lucide-react";
 import { formatIssueDateTime } from "@/lib/format";
@@ -19,7 +19,11 @@ type MaintenanceDetailPanelProps = {
   onSaved?: (item: MaintenanceItem) => void;
 };
 
-export function MaintenanceDetailPanel({
+export function MaintenanceDetailPanel(props: MaintenanceDetailPanelProps) {
+  return <MaintenanceDetailPanelForItem key={props.item.id} {...props} />;
+}
+
+function MaintenanceDetailPanelForItem({
   item,
   variant = "desktop",
   disabled,
@@ -32,13 +36,6 @@ export function MaintenanceDetailPanel({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const isMobile = variant === "mobile";
-
-  useEffect(() => {
-    setForm(formFromItem(item));
-    setEditing(false);
-    setError(null);
-    setSaved(false);
-  }, [item.id]);
 
   function cancelEdit() {
     setForm(formFromItem(item));

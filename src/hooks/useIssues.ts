@@ -42,7 +42,11 @@ export function useIssues() {
   }, [applyRows]);
 
   useEffect(() => {
-    fetchIssues();
+    const timeoutId = window.setTimeout(() => {
+      void fetchIssues();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [fetchIssues]);
 
   useEffect(() => {

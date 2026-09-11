@@ -1,12 +1,30 @@
 import { NextResponse } from "next/server";
 import { isAuthContext, requireManagerAuth } from "@/lib/auth/server";
-import { createServiceClient } from "@/lib/supabase/server";
+import {
+  isJsonRequest,
+  isSameOriginRequest,
+  PRIVATE_NO_STORE_HEADERS,
+} from "@/lib/http/request-security";
+import { createClient } from "@/lib/supabase/server";
 import type { WorkflowStatus } from "@/lib/types/issue";
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  if (!isSameOriginRequest(request)) {
+    return NextResponse.json(
+      { error: "Invalid request origin" },
+      { status: 403, headers: PRIVATE_NO_STORE_HEADERS },
+    );
+  }
+  if (!isJsonRequest(request)) {
+    return NextResponse.json(
+      { error: "Expected a JSON request" },
+      { status: 415, headers: PRIVATE_NO_STORE_HEADERS },
+    );
+  }
+
   const auth = await requireManagerAuth();
   if (!isAuthContext(auth)) return auth;
 
@@ -17,15 +35,7 @@ export async function PATCH(
     completion_note?: string;
   };
 
-  let supabase;
-  try {
-    supabase = createServiceClient();
-  } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Server misconfigured" },
-      { status: 500 },
-    );
-  }
+  const supabase = await createClient();
 
   if (body.action === "workflow" && body.workflow_status) {
     const { data, error } = await supabase

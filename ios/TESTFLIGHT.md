@@ -2,7 +2,7 @@
 
 Native shell app that loads your live web app:
 
-**https://facilities-checklist.vercel.app**
+**https://on-par-checklists.vercel.app**
 
 ## Before you archive
 
@@ -10,7 +10,7 @@ Native shell app that loads your live web app:
 
 Your app URL is already set. Open it in Safari on your phone:
 
-**https://facilities-checklist.vercel.app**
+**https://on-par-checklists.vercel.app**
 
 - If **submit** and **manager login** work there, you do **not** need `npx vercel --prod` right now.
 - If something fails (blank page, Supabase errors), fix **Vercel env vars** (step 2 below), then redeploy.
@@ -24,7 +24,7 @@ That command uploads a **new build** from your Mac to Vercel **production**. Use
 
 **You usually skip it** if:
 
-- The site already works at https://facilities-checklist.vercel.app, and  
+- The site already works at https://on-par-checklists.vercel.app, and
 - You deploy by **pushing to GitHub** (Vercel auto-deploys on push).
 
 From the repo root, if you do need a manual deploy:
@@ -38,23 +38,21 @@ npx vercel --prod
 
 ### 2. Vercel environment variables (important)
 
-In [Vercel Dashboard](https://vercel.com) → your **facilities-checklist** project → **Settings → Environment Variables**, set for **Production**:
+In [Vercel Dashboard](https://vercel.com) → **on-par-checklists** → **Settings → Environment Variables**, set for **Production**:
 
 | Variable | Purpose |
 |----------|---------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Public key (or anon key) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Manager complete/recall (server only) |
-| `MANAGER_PIN` | Shared manager PIN |
 
-After adding or changing vars, click **Redeploy** on the latest deployment (or run `npx vercel --prod` once).
+After adding or changing vars, click **Redeploy** on the latest deployment (or run `pnpm dlx vercel --prod` once).
 
 ### 3. iOS app URL — already configured
 
 **`ios/Config/Release.xcconfig`** is set to:
 
 ```
-WEB_APP_URL = https:/$()/facilities-checklist.vercel.app
+WEB_APP_URL = https:/$()/on-par-checklists.vercel.app
 ```
 
 Rebuild/archive in Xcode after any change to this file. (Keep `/$()/` — it escapes `//` in xcconfig files.)
@@ -137,7 +135,7 @@ No App Store search. No public listing.
 
 | Problem | Fix |
 |--------|-----|
-| White screen in iOS app | Confirm https://facilities-checklist.vercel.app works in Safari |
+| White screen in iOS app | Confirm https://on-par-checklists.vercel.app works in Safari |
 | Submit works on web, not app | Same URL — clear app and reinstall; check Release build |
 | Manager can’t complete issues | Add `SUPABASE_SERVICE_ROLE_KEY` on Vercel, redeploy |
 | Archive signing error | Set **Team** under Signing & Capabilities |

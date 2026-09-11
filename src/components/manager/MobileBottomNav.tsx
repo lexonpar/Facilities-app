@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, ClipboardList, Plus } from "lucide-react";
+import { CalendarDays, ClipboardList, House, Plus } from "lucide-react";
+import { STAFF_TOOLS_URL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { IssueView } from "@/lib/types/issue";
 
@@ -14,6 +15,13 @@ export function MobileBottomNav({ view, onViewChange }: MobileBottomNavProps) {
   return (
     <nav className="safe-bottom fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-200/80 bg-white/95 backdrop-blur-md lg:hidden">
       <div className="mx-auto flex max-w-lg items-stretch justify-around px-2 pt-1">
+        <a
+          href={STAFF_TOOLS_URL}
+          className="flex flex-1 flex-col items-center gap-0.5 py-2 text-zinc-500"
+        >
+          <House className="h-6 w-6" aria-hidden="true" />
+          <span className="text-[10px] font-medium">Apps</span>
+        </a>
         <NavItem
           active={view === "list"}
           label="Issues"

@@ -1,6 +1,6 @@
 # Android — internal team install (Google Play)
 
-Same app as iOS: loads **https://facilities-checklist.vercel.app** (submit issues + manager dashboard with PIN).
+Same app as iOS: loads **https://on-par-checklists.vercel.app** (Punch-ID issue submission and manager dashboard).
 
 **Not public** — only people you add to the **Internal testing** track can install from Play Store.
 
@@ -65,7 +65,7 @@ Same app; updates require sending a new APK manually.
 | Field | Value |
 |-------|--------|
 | Application ID | `com.onparentertainment.facilitieschecklist` |
-| Web URL | https://facilities-checklist.vercel.app |
+| Web URL | https://on-par-checklists.vercel.app |
 | Min Android | 8.0 (API 26) |
 
 To change URL later: edit `WEB_APP_URL` in `android/app/build.gradle.kts` and rebuild.

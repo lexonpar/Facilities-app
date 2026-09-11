@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { BrowserSessionReset } from "@/components/auth/BrowserSessionReset";
+import { isIsolatedStaging } from "../../supabase/functions/_shared/environment";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -45,7 +47,15 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-[100dvh] flex-col">{children}</body>
+      <body className="flex min-h-[100dvh] flex-col">
+        {isIsolatedStaging(process.env) ? (
+          <aside aria-label="Test environment" className="border-b border-amber-300 bg-amber-100 px-4 py-2 text-center text-sm font-semibold text-amber-950">
+            Test environment — use test accounts only.
+          </aside>
+        ) : null}
+        <BrowserSessionReset />
+        {children}
+      </body>
     </html>
   );
 }

@@ -1,4 +1,5 @@
 import { normalizeDepartmentId, type PriorityId } from "@/lib/constants";
+import { getSupabaseUrl } from "@/lib/supabase/env";
 import type { Issue, WorkflowStatus } from "@/lib/types/issue";
 
 export type IssueRow = {
@@ -38,7 +39,7 @@ export function rowToIssue(
 
 export function publicPhotoUrl(photoPath: string | null | undefined): string | undefined {
   if (!photoPath) return undefined;
-  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const base = getSupabaseUrl().replace(/\/+$/, "");
   if (!base) return undefined;
   return `${base}/storage/v1/object/public/issue-photos/${photoPath}`;
 }
